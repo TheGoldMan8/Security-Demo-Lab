@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Brute Force Demo | Security Demo Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-grid-fill me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link text-warning" href="#" onclick="resetDatabase()"><i class="bi bi-arrow-clockwise me-1"></i> Reset DB</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-3"><div id="alert-container"></div></div>
+    
+    <main class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                <li class="breadcrumb-item active">Brute Force Attack</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex gap-2 mb-4">
+            <a href="bruteforce.html?mode=vulnerable" id="btn-vulnerable" class="btn btn-outline-danger">
+                <i class="bi bi-bug-fill me-1"></i> Vulnerable Version
+            </a>
+            <a href="bruteforce.html?mode=secure" id="btn-secure" class="btn btn-outline-success">
+                <i class="bi bi-shield-check me-1"></i> Secure Version
+            </a>
+        </div>
+
+        <div id="status-banner"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-box-arrow-in-right me-2"></i>Login Form</div>
+                    <div class="card-body">
+                        <div id="message-container"></div>
+                        
+                        <form id="login-form">
+                            <div class="mb-3">
+                                <label for="username" class="form-label">Username</label>
+                                <input type="text" class="form-control" id="username" name="username" placeholder="Enter username..." required>
+                            </div>
+                            <div class="mb-3">
+                                <label for="password" class="form-label">Password</label>
+                                <input type="password" class="form-control" id="password" name="password" placeholder="Enter password..." required>
+                            </div>
+                            <button type="submit" id="submit-btn" class="btn btn-danger w-100">
+                                <i class="bi bi-box-arrow-in-right me-1"></i> Login (No Rate Limiting)
+                            </button>
+                        </form>
+                        
+                        <div id="attempts-display" class="mt-4" style="display: none;"></div>
+                    </div>
+                </div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><i class="bi bi-key me-2"></i>Demo Credentials</div>
+                    <div class="card-body">
+                        <table class="table table-sm mb-0">
+                            <thead>
+                                <tr><th>Username</th><th>Password</th><th>Role</th></tr>
+                            </thead>
+                            <tbody>
+                                <tr><td><code>admin</code></td><td><code>admin</code></td><td><span class="badge bg-danger">Admin</span></td></tr>
+                                <tr><td><code>john_doe</code></td><td><code>password123</code></td><td><span class="badge bg-secondary">User</span></td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div id="info-panel"></div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><i class="bi bi-code-slash me-2"></i>Code Comparison</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger fw-bold small">🔴 Vulnerable Route:</h6>
+                            <pre class="small">// No middleware protection!
+app.post('/api/auth/login-vulnerable',
+  checkDbConnection,
+  (req, res) => {
+    // Unlimited attempts allowed
+    checkCredentials(req, res);
+  }
+);</pre>
+                        </div>
+                        <div>
+                            <h6 class="text-success fw-bold small">🟢 Secure Route:</h6>
+                            <pre class="small">const loginRateLimiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 5                // 5 attempts max
+});
+
+app.post('/api/auth/login-secure',
+  loginRateLimiter,     // Rate limiter!
+  checkDbConnection,
+  (req, res) => {
+    checkCredentials(req, res);
+  }
+);</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Security Demo Lab v1.0 - Educational Use Only</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let attemptCount = 0;
+        let secureAttemptCount = 0;
+        let isBlocked = false;
+        
+        function updateAttemptsDisplay(isVulnerable, wasBlocked = false) {
+            const display = document.getElementById('attempts-display');
+            display.style.display = 'block';
+            
+            if (isVulnerable) {
+                if (attemptCount > 0) {
+                    display.innerHTML = `
+                        <div class="p-3 rounded bg-danger bg-opacity-10 border border-danger">
+                            <h6 class="text-danger mb-2"><i class="bi bi-graph-up me-1"></i> Attack Progress:</h6>
+                            <p class="mb-0">
+                                <span class="fs-3 fw-bold text-danger">${attemptCount}</span>
+                                <span class="text-muted">attempts made (no limit!)</span>
+                            </p>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-danger" style="width: 100%"></div>
+                            </div>
+                            <p class="small text-danger mt-2 mb-0"><i class="bi bi-exclamation-triangle me-1"></i> Attacker can try forever!</p>
+                        </div>`;
+                } else {
+                    display.innerHTML = `
+                        <div class="p-3 rounded bg-danger bg-opacity-10 border border-danger">
+                            <h6 class="text-danger mb-2"><i class="bi bi-graph-up me-1"></i> Attack Progress:</h6>
+                            <p class="mb-0 text-muted">Submit login attempts to see the counter...</p>
+                        </div>`;
+                }
+            } else {
+                // Secure version - show attempts with limit visualization
+                const remaining = Math.max(0, 5 - secureAttemptCount);
+                const progressPercent = (secureAttemptCount / 5) * 100;
+                const progressColor = secureAttemptCount >= 5 ? 'bg-danger' : secureAttemptCount >= 3 ? 'bg-warning' : 'bg-success';
+                
+                if (isBlocked || wasBlocked) {
+                    display.innerHTML = `
+                        <div class="p-3 rounded bg-warning bg-opacity-10 border border-warning">
+                            <h6 class="text-warning mb-2"><i class="bi bi-shield-exclamation me-1"></i> Attack Blocked!</h6>
+                            <p class="mb-2">
+                                <span class="fs-3 fw-bold text-warning">${secureAttemptCount}</span>
+                                <span class="text-muted">attempts made</span>
+                            </p>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-danger" style="width: 100%"></div>
+                            </div>
+                            <p class="small text-success mt-2 mb-0"><i class="bi bi-shield-check me-1"></i> Rate limit enforced! Attacker is locked out for 1 minute.</p>
+                        </div>`;
+                } else if (secureAttemptCount > 0) {
+                    display.innerHTML = `
+                        <div class="p-3 rounded bg-success bg-opacity-10 border border-success">
+                            <h6 class="text-success mb-2"><i class="bi bi-speedometer me-1"></i> Attack Progress:</h6>
+                            <p class="mb-2">
+                                <span class="fs-3 fw-bold ${secureAttemptCount >= 4 ? 'text-warning' : 'text-success'}">${secureAttemptCount}</span>
+                                <span class="text-muted">/ 5 attempts used</span>
+                                <span class="badge ${remaining <= 1 ? 'bg-danger' : remaining <= 2 ? 'bg-warning' : 'bg-success'} ms-2">${remaining} remaining</span>
+                            </p>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar ${progressColor}" style="width: ${progressPercent}%"></div>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0">${remaining <= 2 ? '<i class="bi bi-exclamation-circle me-1"></i> Almost at limit!' : 'Rate limit: 5 per minute'}</p>
+                        </div>`;
+                } else {
+                    display.innerHTML = `
+                        <div class="p-3 rounded bg-success bg-opacity-10 border border-success">
+                            <h6 class="text-success mb-2"><i class="bi bi-speedometer me-1"></i> Rate Limit Status:</h6>
+                            <p class="mb-2 text-muted">Maximum <span class="fw-bold text-success">5 attempts per minute</span></p>
+                            <div class="progress mt-2" style="height: 6px;">
+                                <div class="progress-bar bg-success" style="width: 0%"></div>
+                            </div>
+                            <p class="small text-muted mt-2 mb-0">Try login attempts to see the rate limiter in action...</p>
+                        </div>`;
+                }
+            }
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const isVulnerable = isVulnerableMode();
+            
+            document.getElementById('btn-vulnerable').className = isVulnerable ? 'btn btn-danger' : 'btn btn-outline-danger';
+            document.getElementById('btn-secure').className = !isVulnerable ? 'btn btn-success' : 'btn btn-outline-success';
+            
+            document.getElementById('submit-btn').className = isVulnerable ? 'btn btn-danger w-100' : 'btn btn-success w-100';
+            document.getElementById('submit-btn').innerHTML = isVulnerable 
+                ? '<i class="bi bi-box-arrow-in-right me-1"></i> Login (No Rate Limiting)'
+                : '<i class="bi bi-shield-check me-1"></i> Login (Rate Limited)';
+            
+            const bannerHtml = isVulnerable 
+                ? `<div class="vulnerable-banner"><i class="bi bi-exclamation-triangle-fill fs-4"></i><span>⚠️ WARNING: VULNERABLE MODE - No rate limiting! Unlimited login attempts allowed.</span></div>`
+                : `<div class="secure-banner"><i class="bi bi-shield-check fs-4"></i><span>🟢 SECURE MODE - Rate limited to 5 attempts per minute per IP</span></div>`;
+            document.getElementById('status-banner').innerHTML = bannerHtml;
+            
+            const infoPanelHtml = isVulnerable
+                ? `<div class="card border-danger">
+                       <div class="card-header bg-danger bg-opacity-10 text-danger"><i class="bi bi-lightning-fill me-2"></i>Attack Scenario</div>
+                       <div class="card-body">
+                           <h6 class="fw-bold">How Brute Force Attacks Work</h6>
+                           <p class="small text-muted">Attackers use automated tools to try thousands of username/password combinations per minute. Without rate limiting, weak passwords can be cracked in seconds.</p>
+                           <div class="explanation-box">
+                               <h6><i class="bi bi-speedometer me-1"></i> Attack Speed</h6>
+                               <ul class="small mb-0">
+                                   <li>Hydra: ~500-1000 attempts/second</li>
+                                   <li>Burp Suite: ~100-500 attempts/second</li>
+                                   <li>Custom scripts: Varies widely</li>
+                               </ul>
+                           </div>
+                           <h6 class="fw-bold mt-4">Common Password Lists</h6>
+                           <ul class="small text-muted mb-0">
+                               <li><code>rockyou.txt</code> - 14 million passwords</li>
+                               <li><code>10k-most-common.txt</code> - Top 10,000</li>
+                           </ul>
+                           <div class="alert alert-danger mt-4 mb-0">
+                               <i class="bi bi-exclamation-triangle me-2"></i>
+                               <strong>Try it:</strong> Submit wrong passwords repeatedly. Notice there's no lockout or delay!
+                           </div>
+                       </div>
+                   </div>`
+                : `<div class="card border-success">
+                       <div class="card-header bg-success bg-opacity-10 text-success"><i class="bi bi-shield-check me-2"></i>Protection Mechanisms</div>
+                       <div class="card-body">
+                           <h6 class="fw-bold">Rate Limiting Configuration</h6>
+                           <pre class="small">const limiter = rateLimit({
+  windowMs: 60 * 1000,  // 1 minute
+  max: 5,               // 5 attempts
+  message: 'Too many attempts'
+});</pre>
+                           <h6 class="fw-bold mt-4">Additional Best Practices</h6>
+                           <ul class="small text-muted">
+                               <li><strong>Progressive delays:</strong> Increase wait time with each failure</li>
+                               <li><strong>Account lockout:</strong> Lock after X failed attempts</li>
+                               <li><strong>CAPTCHA:</strong> Add after 3 failed attempts</li>
+                               <li><strong>MFA:</strong> Require second factor for login</li>
+                           </ul>
+                           <div class="explanation-box">
+                               <h6><i class="bi bi-calculator me-1"></i> Math of Rate Limiting</h6>
+                               <p class="small mb-0">
+                                   Without limits: 1000 attempts/sec = 86.4M/day<br>
+                                   With 5/min limit: 5 attempts/min = 7,200/day<br>
+                                   <strong>12,000x slower!</strong>
+                               </p>
+                           </div>
+                       </div>
+                   </div>`;
+            document.getElementById('info-panel').innerHTML = infoPanelHtml;
+            
+            updateAttemptsDisplay(isVulnerable);
+            
+            document.getElementById('login-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const username = document.getElementById('username').value;
+                const password = document.getElementById('password').value;
+                
+                const result = await attemptLogin(username, password, isVulnerable);
+                
+                if (isVulnerable) {
+                    if (result.attempts) {
+                        attemptCount = result.attempts;
+                    }
+                } else {
+                    // Track attempts in secure mode
+                    secureAttemptCount++;
+                    if (result.rateLimited) {
+                        isBlocked = true;
+                    }
+                }
+                
+                const msgType = result.success ? 'success' : 'danger';
+                const msgIcon = result.success ? 'check-circle' : 'x-circle';
+                
+                document.getElementById('message-container').innerHTML = `
+                    <div class="alert alert-${msgType} mb-4">
+                        <i class="bi bi-${msgIcon} me-2"></i>${escapeHtml(result.message || result.error)}
+                    </div>`;
+                
+                if (result.rateLimited) {
+                    document.getElementById('message-container').innerHTML = `
+                        <div class="alert alert-warning mb-4">
+                            <i class="bi bi-shield-exclamation me-2"></i>
+                            <strong>429 Too Many Requests</strong> - Rate limit exceeded! This is the security feature working.
+                        </div>`;
+                }
+                
+                updateAttemptsDisplay(isVulnerable, result.rateLimited);
+            });
+            
+            // Initialize the live request logger
+            initRequestLogger('.container');
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,15 @@
+=================================
+QUARTERLY SALES REPORT - Q4 2024
+=================================
+
+Total Revenue: $1,234,567.89
+Total Orders: 5,432
+Average Order Value: $227.23
+
+Top Products:
+1. Widget Pro - 1,200 units
+2. Gadget Plus - 890 units
+3. Super Tool - 654 units
+
+Report generated on 2024-12-01
+=================================

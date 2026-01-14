@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>XSS Demo | Security Demo Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-grid-fill me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link text-warning" href="#" onclick="resetDatabase()"><i class="bi bi-arrow-clockwise me-1"></i> Reset DB</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-3"><div id="alert-container"></div></div>
+    
+    <main class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                <li class="breadcrumb-item active">Cross-Site Scripting (XSS)</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex gap-2 mb-4">
+            <a href="xss.html?mode=vulnerable" id="btn-vulnerable" class="btn btn-outline-danger">
+                <i class="bi bi-bug-fill me-1"></i> Vulnerable Version
+            </a>
+            <a href="xss.html?mode=secure" id="btn-secure" class="btn btn-outline-success">
+                <i class="bi bi-shield-check me-1"></i> Secure Version
+            </a>
+            <button class="btn btn-outline-warning ms-auto" onclick="handleClearGuestbook()">
+                <i class="bi bi-trash me-1"></i> Clear Guestbook
+            </button>
+        </div>
+
+        <div id="status-banner"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card mb-4">
+                    <div class="card-header"><i class="bi bi-pencil-square me-2"></i>Sign the Guestbook</div>
+                    <div class="card-body">
+                        <form id="guestbook-form">
+                            <div class="row g-3">
+                                <div class="col-md-4">
+                                    <label for="name" class="form-label">Your Name</label>
+                                    <input type="text" class="form-control" id="name" name="name" required>
+                                </div>
+                                <div class="col-md-8">
+                                    <label for="message" class="form-label">Message</label>
+                                    <textarea class="form-control" id="message" name="message" rows="2" required></textarea>
+                                </div>
+                            </div>
+                            <button type="submit" id="submit-btn" class="btn btn-primary mt-3">
+                                <i class="bi bi-send me-1"></i> Post Message
+                            </button>
+                        </form>
+                    </div>
+                </div>
+                
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-chat-quote me-2"></i>Guestbook Entries</div>
+                    <div class="card-body">
+                        <div id="entries-container">
+                            <div class="text-center text-muted py-4">
+                                <i class="bi bi-hourglass-split fs-1"></i>
+                                <p class="mt-2 mb-0">Loading entries...</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div id="info-panel"></div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><i class="bi bi-code-slash me-2"></i>JavaScript Code Comparison</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger fw-bold small">🔴 Vulnerable Code:</h6>
+                            <pre class="small">// Raw HTML injected directly
+const message = entry.message;
+container.innerHTML = message;</pre>
+                            <p class="small text-muted mb-0">Using <code>innerHTML</code> with raw user input allows script execution.</p>
+                        </div>
+                        <div>
+                            <h6 class="text-success fw-bold small">🟢 Secure Code:</h6>
+                            <pre class="small">// HTML entities are escaped
+const message = escapeHtml(entry.message);
+container.innerHTML = message;</pre>
+                            <p class="small text-muted mb-0">The <code>escapeHtml()</code> function converts <code>&lt;</code> to <code>&amp;lt;</code>, preventing script execution.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Security Demo Lab v1.0 - Educational Use Only</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        let currentMode = 'vulnerable';
+        
+        async function handleClearGuestbook() {
+            if (await clearGuestbook()) {
+                loadAndRenderEntries();
+            }
+        }
+        
+        async function loadAndRenderEntries() {
+            const entries = await loadGuestbookEntries();
+            renderGuestbookEntries(entries, currentMode === 'vulnerable');
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const isVulnerable = isVulnerableMode();
+            currentMode = isVulnerable ? 'vulnerable' : 'secure';
+            
+            document.getElementById('btn-vulnerable').className = isVulnerable ? 'btn btn-danger' : 'btn btn-outline-danger';
+            document.getElementById('btn-secure').className = !isVulnerable ? 'btn btn-success' : 'btn btn-outline-success';
+            document.getElementById('submit-btn').className = isVulnerable ? 'btn btn-danger mt-3' : 'btn btn-success mt-3';
+            document.getElementById('submit-btn').innerHTML = isVulnerable 
+                ? '<i class="bi bi-send me-1"></i> Post Message'
+                : '<i class="bi bi-shield-check me-1"></i> Post Message (Secure)';
+            
+            // XSS attack payloads - actual values for copying
+            var xssPayloads = [];
+            xssPayloads.push('<scr' + 'ipt>alert("XSS!")<\/scr' + 'ipt>');
+            xssPayloads.push('<img src=x onerror="alert(\'XSS\')">');
+            xssPayloads.push('<svg onload="alert(\'XSS\')">');
+            xssPayloads.push('<marquee>Hacked!</marquee>');
+            
+            // Display versions (HTML-encoded for safe display)
+            var xssPayloadsDisplay = [];
+            xssPayloadsDisplay.push('&lt;script&gt;alert("XSS!")&lt;/script&gt;');
+            xssPayloadsDisplay.push('&lt;img src=x onerror="alert(\'XSS\')"&gt;');
+            xssPayloadsDisplay.push('&lt;svg onload="alert(\'XSS\')"&gt;');
+            xssPayloadsDisplay.push('&lt;marquee&gt;Hacked!&lt;/marquee&gt;');
+            
+            const bannerHtml = isVulnerable 
+                ? '<div class="vulnerable-banner"><i class="bi bi-exclamation-triangle-fill fs-4"></i><span>⚠️ WARNING: VULNERABLE MODE - User input is rendered without sanitization!</span></div>'
+                : '<div class="secure-banner"><i class="bi bi-shield-check fs-4"></i><span>🟢 SECURE MODE - HTML entities are escaped to prevent script execution</span></div>';
+            document.getElementById('status-banner').innerHTML = bannerHtml;
+            
+            let infoPanelHtml;
+            if (isVulnerable) {
+                infoPanelHtml = '<div class="card border-danger">' +
+                    '<div class="card-header bg-danger bg-opacity-10 text-danger"><i class="bi bi-lightning-fill me-2"></i>XSS Payloads to Try</div>' +
+                    '<div class="card-body">' +
+                    '<p class="small text-muted mb-3">Paste these in the message field to execute malicious scripts:</p>';
+                
+                for (let i = 0; i < xssPayloadsDisplay.length; i++) {
+                    infoPanelHtml += '<div class="attack-string"><code>' + xssPayloadsDisplay[i] + '</code><button class="copy-btn" data-xss-index="' + i + '"><i class="bi bi-clipboard"></i></button></div>';
+                }
+                
+                infoPanelHtml += '<div class="explanation-box mt-3"><h6><i class="bi bi-exclamation-diamond me-1"></i> Real-World Impact</h6><p class="small mb-0">XSS can steal session cookies, keylog user input, redirect to phishing sites, or completely deface a website.</p></div>' +
+                    '</div></div>';
+            } else {
+                infoPanelHtml = '<div class="card border-success">' +
+                    '<div class="card-header bg-success bg-opacity-10 text-success"><i class="bi bi-shield-check me-2"></i>Why It\'s Secure</div>' +
+                    '<div class="card-body">' +
+                    '<h6 class="fw-bold">HTML Entity Escaping</h6>' +
+                    '<p class="small text-muted">Special characters are converted to HTML entities. The script tags become harmless text: <code>&amp;lt;script&amp;gt;</code></p>' +
+                    '<div class="explanation-box">' +
+                    '<h6><i class="bi bi-code-slash me-1"></i> Safe Output</h6>' +
+                    '<pre class="small mb-0" style="background: transparent; border: none; padding: 0;">&lt;script&gt; becomes:\n&amp;lt;script&amp;gt;\n\nDisplayed as text,\nnot executed!</pre>' +
+                    '</div>' +
+                    '<h6 class="fw-bold mt-4">Try It!</h6>' +
+                    '<p class="small text-muted mb-0">Submit <code>&lt;script&gt;alert(1)&lt;/script&gt;</code> and see how it\'s displayed as text instead of executing.</p>' +
+                    '</div></div>';
+            }
+            document.getElementById('info-panel').innerHTML = infoPanelHtml;
+            
+            // Attach copy button event listeners
+            document.querySelectorAll('.copy-btn[data-xss-index]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.xssIndex);
+                    copyToClipboard(xssPayloads[index], this);
+                });
+            });
+            
+            loadAndRenderEntries();
+            
+            document.getElementById('guestbook-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const name = document.getElementById('name').value;
+                const message = document.getElementById('message').value;
+                
+                const result = await addGuestbookEntry(name, message);
+                if (result.success) {
+                    showAlert('Entry added!', 'success');
+                    document.getElementById('name').value = '';
+                    document.getElementById('message').value = '';
+                    loadAndRenderEntries();
+                } else {
+                    showAlert('Error: ' + result.error, 'danger');
+                }
+            });
+            
+            // Initialize the live request logger
+            initRequestLogger('.container');
+        });
+    </script>
+</body>
+</html>
+

@@ -1,0 +1,6 @@
+Welcome to the Security Demo Application!
+
+This file is part of the Path Traversal demonstration.
+You should only be able to access files within this directory.
+
+Try to access files outside this directory to see the vulnerability!

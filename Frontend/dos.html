@@ -1,0 +1,220 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DoS / ReDoS Demo | Security Demo Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-grid-fill me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link text-warning" href="#" onclick="resetDatabase()"><i class="bi bi-arrow-clockwise me-1"></i> Reset DB</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-3"><div id="alert-container"></div></div>
+    
+    <main class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                <li class="breadcrumb-item active">Denial of Service (ReDoS)</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex gap-2 mb-4">
+            <a href="dos.html?mode=vulnerable" id="btn-vulnerable" class="btn btn-outline-danger">
+                <i class="bi bi-bug-fill me-1"></i> Vulnerable Version
+            </a>
+            <a href="dos.html?mode=secure" id="btn-secure" class="btn btn-outline-success">
+                <i class="bi bi-shield-check me-1"></i> Secure Version
+            </a>
+        </div>
+
+        <div id="status-banner"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-regex me-2"></i>Text Pattern Analyzer</div>
+                    <div class="card-body">
+                        <form id="dos-form">
+                            <div class="mb-3">
+                                <label for="text" class="form-label">
+                                    Enter text to analyze
+                                    <span id="max-length-hint" class="text-muted small" style="display: none;">(max 1000 characters)</span>
+                                </label>
+                                <textarea class="form-control" id="text" name="text" rows="4" 
+                                          placeholder="Enter text to check for pattern 'a+b'..."></textarea>
+                            </div>
+                            <button type="submit" id="submit-btn" class="btn btn-danger">
+                                <i class="bi bi-search me-1"></i> Analyze Pattern
+                            </button>
+                        </form>
+                        
+                        <div id="dos-result"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-4">
+                <div id="info-panel"></div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><i class="bi bi-code-slash me-2"></i>Code Comparison</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger fw-bold small">🔴 Vulnerable:</h6>
+                            <pre class="small">// No length check
+// Dangerous regex
+pattern = /(a+)+b/
+text.match(pattern)</pre>
+                        </div>
+                        <div>
+                            <h6 class="text-success fw-bold small">🟢 Secure:</h6>
+                            <pre class="small">// Length limit
+if (text.length > 1000)
+    return "Too long!"
+    
+// Safe regex
+pattern = /a+b/
+text.match(pattern)</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Security Demo Lab v1.0 - Educational Use Only</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isVulnerable = isVulnerableMode();
+            const MAX_LENGTH = 1000;
+            
+            document.getElementById('btn-vulnerable').className = isVulnerable ? 'btn btn-danger' : 'btn btn-outline-danger';
+            document.getElementById('btn-secure').className = !isVulnerable ? 'btn btn-success' : 'btn btn-outline-success';
+            
+            document.getElementById('submit-btn').className = isVulnerable ? 'btn btn-danger' : 'btn btn-success';
+            
+            if (!isVulnerable) {
+                document.getElementById('max-length-hint').style.display = 'inline';
+                document.getElementById('text').maxLength = MAX_LENGTH;
+            }
+            
+            // DoS attack payloads with descriptions
+            const dosPayloads = [
+                { text: "aaaaaaaaaa!", desc: "10 a's - should be quick" },
+                { text: "aaaaaaaaaaaaaaaaaaaa!", desc: "20 a's - noticeable delay" },
+                { text: "aaaaaaaaaaaaaaaaaaaaaaaaaaa!", desc: "27 a's - several seconds!" }
+            ];
+            
+            const bannerHtml = isVulnerable 
+                ? `<div class="vulnerable-banner"><i class="bi bi-exclamation-triangle-fill fs-4"></i><span>⚠️ WARNING: VULNERABLE MODE - Regex susceptible to catastrophic backtracking!</span></div>`
+                : `<div class="secure-banner"><i class="bi bi-shield-check fs-4"></i><span>🟢 SECURE MODE - Input limits and safe regex patterns prevent DoS</span></div>`;
+            document.getElementById('status-banner').innerHTML = bannerHtml;
+            
+            const infoPanelHtml = isVulnerable
+                ? `<div class="card border-danger">
+                       <div class="card-header bg-danger bg-opacity-10 text-danger"><i class="bi bi-lightning-fill me-2"></i>ReDoS Attack Payloads</div>
+                       <div class="card-body">
+                           <p class="small text-muted mb-3">These inputs cause exponential backtracking. <strong>Start small!</strong></p>
+                           <h6 class="text-danger small">⚠️ Increasing Severity:</h6>
+                           ${dosPayloads.map((p, i) => `
+                           <div class="attack-string"><code>${escapeHtml(p.text)}</code><button class="copy-btn" data-dos-index="${i}"><i class="bi bi-clipboard"></i></button></div>
+                           <p class="small text-muted mb-2">${p.desc}</p>`).join('')}
+                           <div class="alert alert-danger mt-3">
+                               <i class="bi bi-exclamation-octagon me-2"></i>
+                               <strong>Danger:</strong> 30+ a's can freeze your browser!
+                           </div>
+                           <div class="explanation-box mt-3">
+                               <h6><i class="bi bi-graph-up me-1"></i> Exponential Growth</h6>
+                               <p class="small mb-0">Pattern: <code>(a+)+b</code><br>Each additional 'a' <strong>doubles</strong> the processing time! 20 a's = 2^20 = ~1 million backtracks.</p>
+                           </div>
+                       </div>
+                   </div>`
+                : `<div class="card border-success">
+                       <div class="card-header bg-success bg-opacity-10 text-success"><i class="bi bi-shield-check me-2"></i>DoS Prevention</div>
+                       <div class="card-body">
+                           <h6 class="fw-bold">Protection Layers</h6>
+                           <div class="d-flex align-items-start gap-2 mb-3">
+                               <span class="badge bg-success rounded-pill">1</span>
+                               <div><strong>Input Length Limit</strong><p class="small text-muted mb-0">Maximum 1000 characters prevents large payloads.</p></div>
+                           </div>
+                           <div class="d-flex align-items-start gap-2 mb-3">
+                               <span class="badge bg-success rounded-pill">2</span>
+                               <div><strong>Safe Regex Pattern</strong><p class="small text-muted mb-0">Using <code>a+b</code> instead of <code>(a+)+b</code> avoids catastrophic backtracking.</p></div>
+                           </div>
+                           <div class="d-flex align-items-start gap-2 mb-3">
+                               <span class="badge bg-success rounded-pill">3</span>
+                               <div><strong>Rate Limiting</strong><p class="small text-muted mb-0">10 requests per minute prevents flooding.</p></div>
+                           </div>
+                           <div class="explanation-box">
+                               <h6><i class="bi bi-lightbulb me-1"></i> Safe Regex Rules</h6>
+                               <ul class="small mb-0">
+                                   <li>Avoid nested quantifiers: <code>(a+)+</code></li>
+                                   <li>Avoid overlapping alternations</li>
+                                   <li>Use atomic groups when available</li>
+                                   <li>Set regex timeouts</li>
+                               </ul>
+                           </div>
+                       </div>
+                   </div>`;
+            document.getElementById('info-panel').innerHTML = infoPanelHtml;
+            
+            // Attach copy button event listeners
+            document.querySelectorAll('.copy-btn[data-dos-index]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.dosIndex);
+                    copyToClipboard(dosPayloads[index].text, this);
+                });
+            });
+            
+            document.getElementById('dos-form').addEventListener('submit', function(e) {
+                e.preventDefault();
+                const text = document.getElementById('text').value;
+                
+                if (!isVulnerable && text.length > MAX_LENGTH) {
+                    renderDosResult({ error: `Input too long! Maximum ${MAX_LENGTH} characters allowed.` });
+                    return;
+                }
+                
+                // Run analysis in a timeout to allow UI to update
+                document.getElementById('dos-result').innerHTML = `
+                    <div class="alert alert-info mt-4">
+                        <i class="bi bi-hourglass-split me-2"></i> Processing...
+                    </div>`;
+                
+                setTimeout(() => {
+                    const result = analyzePattern(text, isVulnerable);
+                    renderDosResult(result);
+                }, 10);
+            });
+            
+            // Initialize the live request logger
+            initRequestLogger('.container');
+        });
+    </script>
+</body>
+</html>
+

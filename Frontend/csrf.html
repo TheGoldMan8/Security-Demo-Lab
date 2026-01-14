@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSRF Demo | Security Demo Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html"><i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab</a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item"><a class="nav-link" href="index.html"><i class="bi bi-grid-fill me-1"></i> Dashboard</a></li>
+                    <li class="nav-item"><a class="nav-link text-warning" href="#" onclick="resetDatabase()"><i class="bi bi-arrow-clockwise me-1"></i> Reset DB</a></li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-3"><div id="alert-container"></div></div>
+    
+    <main class="container py-4">
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                <li class="breadcrumb-item active">CSRF Attack</li>
+            </ol>
+        </nav>
+
+        <div class="d-flex gap-2 mb-4">
+            <a href="csrf.html?mode=vulnerable" id="btn-vulnerable" class="btn btn-outline-danger">
+                <i class="bi bi-bug-fill me-1"></i> Vulnerable Version
+            </a>
+            <a href="csrf.html?mode=secure" id="btn-secure" class="btn btn-outline-success">
+                <i class="bi bi-shield-check me-1"></i> Secure Version
+            </a>
+        </div>
+
+        <div id="status-banner"></div>
+
+        <div class="row g-4">
+            <div class="col-lg-6">
+                <div class="card">
+                    <div class="card-header"><i class="bi bi-envelope me-2"></i>Update Email Address</div>
+                    <div class="card-body">
+                        <div class="alert alert-info mb-4">
+                            <i class="bi bi-person-circle me-2"></i>
+                            <strong>Current Email:</strong> <span id="current-email">Loading...</span>
+                        </div>
+                        
+                        <div id="message-container"></div>
+                        
+                        <form id="email-form">
+                            <div class="mb-3">
+                                <label for="email" class="form-label">New Email Address</label>
+                                <input type="email" class="form-control" id="email" name="email" placeholder="Enter new email..." required>
+                            </div>
+                            <button type="submit" id="submit-btn" class="btn btn-danger">
+                                <i class="bi bi-send me-1"></i> Update Email (No CSRF Protection)
+                            </button>
+                        </form>
+                        
+                        <div id="token-display" class="mt-4" style="display: none;">
+                            <div class="p-3 rounded" style="background: var(--darker-bg); border: 1px solid var(--border-color);">
+                                <h6 class="text-success mb-2"><i class="bi bi-key me-1"></i> Simulated CSRF Token:</h6>
+                                <code class="small d-block text-break" id="csrf-token" style="word-break: break-all;"></code>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="col-lg-6">
+                <div id="info-panel"></div>
+                
+                <div class="card mt-4">
+                    <div class="card-header"><i class="bi bi-code-slash me-2"></i>Code Comparison</div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger fw-bold small">🔴 Vulnerable Form:</h6>
+                            <pre class="small">&lt;form method="POST"&gt;
+  &lt;input name="email"&gt;
+  &lt;button&gt;Update&lt;/button&gt;
+&lt;/form&gt;</pre>
+                        </div>
+                        <div>
+                            <h6 class="text-success fw-bold small">🟢 Secure Form (with CSRF token):</h6>
+                            <pre class="small">&lt;form method="POST"&gt;
+  &lt;input type="hidden" name="csrf_token" value="..."&gt;
+  &lt;input name="email"&gt;
+  &lt;button&gt;Update&lt;/button&gt;
+&lt;/form&gt;</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Security Demo Lab v1.0 - Educational Use Only</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        // Generate a random CSRF token for simulation
+        function generateToken() {
+            return Array.from(crypto.getRandomValues(new Uint8Array(32)))
+                .map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        async function loadCurrentEmail() {
+            const email = await getUserEmail(1);
+            document.getElementById('current-email').textContent = email;
+        }
+        
+        document.addEventListener('DOMContentLoaded', function() {
+            const isVulnerable = isVulnerableMode();
+            
+            document.getElementById('btn-vulnerable').className = isVulnerable ? 'btn btn-danger' : 'btn btn-outline-danger';
+            document.getElementById('btn-secure').className = !isVulnerable ? 'btn btn-success' : 'btn btn-outline-success';
+            
+            document.getElementById('submit-btn').className = isVulnerable ? 'btn btn-danger' : 'btn btn-success';
+            document.getElementById('submit-btn').innerHTML = isVulnerable 
+                ? '<i class="bi bi-send me-1"></i> Update Email (No CSRF Protection)'
+                : '<i class="bi bi-shield-check me-1"></i> Update Email (CSRF Protected)';
+            
+            const bannerHtml = isVulnerable 
+                ? `<div class="vulnerable-banner"><i class="bi bi-exclamation-triangle-fill fs-4"></i><span>⚠️ WARNING: VULNERABLE MODE - No CSRF protection! Requests can be forged from any site.</span></div>`
+                : `<div class="secure-banner"><i class="bi bi-shield-check fs-4"></i><span>🟢 SECURE MODE - CSRF tokens validate request origin</span></div>`;
+            document.getElementById('status-banner').innerHTML = bannerHtml;
+            
+            if (!isVulnerable) {
+                document.getElementById('token-display').style.display = 'block';
+                document.getElementById('csrf-token').textContent = generateToken();
+            }
+            
+            const infoPanelHtml = isVulnerable
+                ? `<div class="card border-danger">
+                       <div class="card-header bg-danger bg-opacity-10 text-danger"><i class="bi bi-incognito me-2"></i>Attacker's Malicious Page</div>
+                       <div class="card-body">
+                           <p class="text-muted small mb-3">This is what an attacker's page might look like. If a logged-in user visits this page, their email will be changed without their knowledge!</p>
+                           <div class="alert alert-warning"><i class="bi bi-lightning-fill me-2"></i><strong>Live Demo:</strong> Click the button below to simulate the attack!</div>
+                           <div class="p-4 rounded text-center" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 2px dashed var(--accent-red);">
+                               <h4 class="text-warning mb-3">🎉 You Won a FREE iPhone! 🎉</h4>
+                               <p class="text-light">Click below to claim your prize:</p>
+                               <button class="btn btn-warning btn-lg" onclick="simulateAttack()"><i class="bi bi-gift me-1"></i> Claim Prize!</button>
+                           </div>
+                           <div class="mt-4">
+                               <h6 class="text-danger mb-2"><i class="bi bi-code-slash me-1"></i> Attacker's HTML Code:</h6>
+                               <pre class="small" style="max-height: 200px; overflow-y: auto;">&lt;form id="csrf-form" action="/api/users/1/email" method="POST" style="display:none;"&gt;
+    &lt;input name="email" value="hacker@evil.com"&gt;
+&lt;/form&gt;
+&lt;button onclick="document.getElementById('csrf-form').submit();"&gt;
+    Claim Prize!
+&lt;/button&gt;</pre>
+                           </div>
+                       </div>
+                   </div>`
+                : `<div class="card border-danger mb-4">
+                       <div class="card-header bg-danger bg-opacity-10 text-danger"><i class="bi bi-incognito me-2"></i>Attacker's Malicious Page (Attack Will Fail!)</div>
+                       <div class="card-body">
+                           <p class="text-muted small mb-3">Try the same attack - but now CSRF protection is enabled!</p>
+                           <div class="alert alert-info"><i class="bi bi-shield-check me-2"></i><strong>Test it:</strong> Click the button to see the attack get blocked!</div>
+                           <div class="p-4 rounded text-center" style="background: linear-gradient(135deg, #1a1a2e 0%, #16213e 100%); border: 2px dashed var(--accent-green);">
+                               <h4 class="text-warning mb-3">🎉 You Won a FREE iPhone! 🎉</h4>
+                               <p class="text-light">Click below to claim your prize:</p>
+                               <button class="btn btn-warning btn-lg" onclick="simulateAttackSecure()"><i class="bi bi-gift me-1"></i> Claim Prize!</button>
+                           </div>
+                           <div id="attack-result" class="mt-3"></div>
+                       </div>
+                   </div>
+                   <div class="card border-success">
+                       <div class="card-header bg-success bg-opacity-10 text-success"><i class="bi bi-shield-check me-2"></i>Why CSRF Protection Works</div>
+                       <div class="card-body">
+                           <h6 class="fw-bold">How CSRF Tokens Work</h6>
+                           <ol class="small text-muted">
+                               <li class="mb-2">Server generates a random, unique token for each session</li>
+                               <li class="mb-2">Token is embedded in every form as a hidden field</li>
+                               <li class="mb-2">On form submission, server validates the token</li>
+                               <li class="mb-2">Attackers cannot guess or obtain the token</li>
+                               <li class="mb-0">Cross-origin requests fail validation!</li>
+                           </ol>
+                           <h6 class="fw-bold mt-4">Server Response to Attack:</h6>
+                           <pre class="small text-danger">403 Forbidden
+{ "error": "CSRF token missing or invalid" }</pre>
+                       </div>
+                   </div>`;
+            document.getElementById('info-panel').innerHTML = infoPanelHtml;
+            
+            loadCurrentEmail();
+            
+            document.getElementById('email-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const newEmail = document.getElementById('email').value;
+                
+                const result = await updateUserEmail(1, newEmail);
+                if (result.success) {
+                    document.getElementById('message-container').innerHTML = `
+                        <div class="alert alert-success mb-4">
+                            <i class="bi bi-check-circle me-2"></i>${escapeHtml(result.message)}
+                        </div>`;
+                    document.getElementById('current-email').textContent = newEmail;
+                    document.getElementById('email').value = '';
+                } else {
+                    document.getElementById('message-container').innerHTML = `
+                        <div class="alert alert-danger mb-4">
+                            <i class="bi bi-x-circle me-2"></i>Error: ${escapeHtml(result.error)}
+                        </div>`;
+                }
+            });
+            
+            // Initialize the live request logger
+            initRequestLogger('.container');
+        });
+        
+        async function simulateAttack() {
+            const result = await updateUserEmail(1, 'hacker@evil.com');
+            if (result.success) {
+                showAlert('🚨 CSRF Attack Succeeded! Email changed to hacker@evil.com', 'danger');
+                document.getElementById('current-email').textContent = 'hacker@evil.com';
+            }
+        }
+        
+        async function simulateAttackSecure() {
+            // Simulate an attack without a valid CSRF token
+            const attackResultDiv = document.getElementById('attack-result');
+            
+            // Show loading state
+            attackResultDiv.innerHTML = `
+                <div class="alert alert-secondary">
+                    <i class="bi bi-hourglass-split me-2"></i> Attempting attack...
+                </div>`;
+            
+            // Simulate network delay
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+            // Simulate the server rejecting the request due to missing CSRF token
+            attackResultDiv.innerHTML = `
+                <div class="alert alert-success">
+                    <h6 class="alert-heading"><i class="bi bi-shield-check me-2"></i> Attack Blocked!</h6>
+                    <hr>
+                    <p class="mb-2"><strong>Server Response:</strong></p>
+                    <pre class="small mb-0 p-2 rounded" style="background: rgba(0,0,0,0.2);">HTTP 403 Forbidden
+{
+  "error": "CSRF token missing or invalid",
+  "message": "Request rejected - no valid token"
+}</pre>
+                </div>`;
+            
+            showAlert('🛡️ CSRF Attack Blocked! The server rejected the request.', 'success');
+        }
+    </script>
+</body>
+</html>
+

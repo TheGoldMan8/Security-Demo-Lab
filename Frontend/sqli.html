@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>SQL Injection Demo | Security Demo Lab</title>
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab
+            </a>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html"><i class="bi bi-grid-fill me-1"></i> Dashboard</a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="#" onclick="resetDatabase()"><i class="bi bi-arrow-clockwise me-1"></i> Reset DB</a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <div class="container mt-3"><div id="alert-container"></div></div>
+    
+    <main class="container py-4">
+        <!-- Breadcrumb -->
+        <nav aria-label="breadcrumb" class="mb-4">
+            <ol class="breadcrumb">
+                <li class="breadcrumb-item"><a href="index.html">Dashboard</a></li>
+                <li class="breadcrumb-item active">SQL Injection</li>
+            </ol>
+        </nav>
+
+        <!-- Version Toggle -->
+        <div class="d-flex gap-2 mb-4">
+            <a href="sqli.html?mode=vulnerable" id="btn-vulnerable" class="btn btn-outline-danger">
+                <i class="bi bi-bug-fill me-1"></i> Vulnerable Version
+            </a>
+            <a href="sqli.html?mode=secure" id="btn-secure" class="btn btn-outline-success">
+                <i class="bi bi-shield-check me-1"></i> Secure Version
+            </a>
+        </div>
+
+        <!-- Status Banner -->
+        <div id="status-banner"></div>
+
+        <div class="row g-4">
+            <!-- Search Form -->
+            <div class="col-lg-8">
+                <div class="card">
+                    <div class="card-header">
+                        <i class="bi bi-search me-2"></i>User Search Feature
+                    </div>
+                    <div class="card-body">
+                        <form id="search-form">
+                            <div class="mb-3">
+                                <label for="search" class="form-label">Search Users by Username (Exact Match)</label>
+                                <div class="input-group">
+                                    <input type="text" class="form-control" id="search" name="search" 
+                                           placeholder="Enter exact username (e.g., admin, john_doe)...">
+                                    <button class="btn btn-primary" type="submit">
+                                        <i class="bi bi-search me-1"></i> Search
+                                    </button>
+                                </div>
+                            </div>
+                        </form>
+                        
+                        <div id="query-display" class="mt-4" style="display: none;">
+                            <h6 class="fw-bold text-muted mb-2">
+                                <i class="bi bi-database me-1"></i> SQL Query Executed:
+                            </h6>
+                            <pre id="query-executed"></pre>
+                        </div>
+                        
+                        <div id="results-container"></div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Info Panel -->
+            <div class="col-lg-4">
+                <div id="info-panel"></div>
+                
+                <!-- Code Comparison -->
+                <div class="card mt-4">
+                    <div class="card-header">
+                        <i class="bi bi-code-slash me-2"></i>Code Comparison
+                    </div>
+                    <div class="card-body">
+                        <div class="mb-3">
+                            <h6 class="text-danger fw-bold small">🔴 Vulnerable Code:</h6>
+                            <pre class="small">// String concatenation - DANGEROUS!
+const query = `SELECT * FROM users 
+  WHERE username = '${searchTerm}'`;
+db.exec(query);</pre>
+                        </div>
+                        <div>
+                            <h6 class="text-success fw-bold small">🟢 Secure Code:</h6>
+                            <pre class="small">// Parameterized query - SAFE!
+const stmt = db.prepare(
+  'SELECT * FROM users WHERE username = ?'
+);
+stmt.bind([searchTerm]);</pre>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <footer>
+        <div class="container text-center">
+            <p class="mb-0 text-muted small">Security Demo Lab v1.0 - Educational Use Only</p>
+        </div>
+    </footer>
+    
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <script src="js/app.js"></script>
+    <script>
+        document.addEventListener('DOMContentLoaded', function() {
+            const isVulnerable = isVulnerableMode();
+            
+            // Update buttons
+            document.getElementById('btn-vulnerable').className = isVulnerable ? 'btn btn-danger' : 'btn btn-outline-danger';
+            document.getElementById('btn-secure').className = !isVulnerable ? 'btn btn-success' : 'btn btn-outline-success';
+            
+            // Status banner
+            const bannerHtml = isVulnerable 
+                ? `<div class="vulnerable-banner">
+                       <i class="bi bi-exclamation-triangle-fill fs-4"></i>
+                       <span>⚠️ WARNING: VULNERABLE MODE - This code is susceptible to SQL Injection attacks!</span>
+                   </div>`
+                : `<div class="secure-banner">
+                       <i class="bi bi-shield-check fs-4"></i>
+                       <span>🟢 SECURE MODE - This code uses parameterized queries to prevent SQL Injection</span>
+                   </div>`;
+            document.getElementById('status-banner').innerHTML = bannerHtml;
+            
+            // Attack payloads for copy functionality
+            const attackPayloads = [
+                { text: "' OR '1'='1", desc: "Boolean injection - returns all users" },
+                { text: "' OR 1=1--", desc: "Comment injection - ignores rest of query" },
+                { text: "' ; select * from users ; select * from users where id = '", desc: "Auth bypass - matches admin, ignores password check" },
+            ];
+            
+            // Info panel
+            const infoPanelHtml = isVulnerable
+                ? `<div class="card border-danger">
+                       <div class="card-header bg-danger bg-opacity-10 text-danger">
+                           <i class="bi bi-lightning-fill me-2"></i>Attack Strings to Try
+                       </div>
+                       <div class="card-body">
+                           <p class="small text-muted mb-3">Copy these payloads to exploit the SQL injection vulnerability:</p>
+                           ${attackPayloads.map((p, i) => `
+                           <div class="attack-string">
+                               <code>${escapeHtml(p.text)}</code>
+                               <button class="copy-btn" data-payload-index="${i}"><i class="bi bi-clipboard"></i> Copy</button>
+                           </div>`).join('')}
+                           <div class="explanation-box mt-4">
+                               <h6><i class="bi bi-question-circle me-1"></i> How It Works</h6>
+                               <p class="small mb-2">The input <code>' OR '1'='1</code> closes the username string and adds a condition that's always true, returning ALL users.</p>
+                               <p class="small mb-0"><strong>Stacked queries:</strong> The <code>; SELECT *</code> attack tries to execute multiple SQL statements, potentially extracting all data from tables.</p>
+                           </div>
+                       </div>
+                   </div>`
+                : `<div class="card border-success">
+                       <div class="card-header bg-success bg-opacity-10 text-success">
+                           <i class="bi bi-shield-check me-2"></i>Why It's Secure
+                       </div>
+                       <div class="card-body">
+                           <h6 class="fw-bold">Parameterized Queries</h6>
+                           <p class="small text-muted">The secure version uses prepared statements with placeholders (<code>?</code>). User input is passed as a parameter, never concatenated into the SQL string.</p>
+                           <div class="explanation-box">
+                               <h6><i class="bi bi-code-slash me-1"></i> Secure Code Pattern</h6>
+                               <pre class="small mb-0" style="background: transparent; border: none; padding: 0;">const stmt = db.prepare(
+  'SELECT * FROM users WHERE username = ?'
+);
+stmt.bind([searchTerm]);</pre>
+                           </div>
+                           <h6 class="fw-bold mt-4">Try the Same Attacks!</h6>
+                           <p class="small text-muted mb-0">Enter <code>' OR '1'='1</code> in the search box. Notice how it's treated as literal text and returns no results.</p>
+                       </div>
+                   </div>`;
+            document.getElementById('info-panel').innerHTML = infoPanelHtml;
+            
+            // Attach copy button event listeners
+            document.querySelectorAll('.copy-btn[data-payload-index]').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    const index = parseInt(this.dataset.payloadIndex);
+                    copyToClipboard(attackPayloads[index].text, this);
+                });
+            });
+            
+            // Form submission
+            document.getElementById('search-form').addEventListener('submit', async function(e) {
+                e.preventDefault();
+                const searchTerm = document.getElementById('search').value;
+                
+                const data = await searchUsers(searchTerm, isVulnerable);
+                
+                document.getElementById('query-display').style.display = 'block';
+                renderSQLiResults(data, searchTerm, isVulnerable);
+            });
+            
+            // Initialize the live request logger
+            initRequestLogger('.container');
+        });
+    </script>
+</body>
+</html>
+

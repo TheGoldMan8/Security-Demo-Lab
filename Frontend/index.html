@@ -1,0 +1,285 @@
+<!DOCTYPE html>
+<html lang="en" data-bs-theme="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Dashboard | Security Demo Lab</title>
+    
+    <!-- Bootstrap 5 CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/css/bootstrap.min.css" rel="stylesheet">
+    
+    <!-- Bootstrap Icons -->
+    <link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.1/font/bootstrap-icons.css">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=JetBrains+Mono:wght@400;500;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+    <!-- Navigation -->
+    <nav class="navbar navbar-expand-lg navbar-dark sticky-top">
+        <div class="container">
+            <a class="navbar-brand" href="index.html">
+                <i class="bi bi-shield-lock-fill me-2"></i>Security Demo Lab
+            </a>
+            <button class="navbar-toggler" type="button" data-bs-toggle="collapse" data-bs-target="#navbarNav">
+                <span class="navbar-toggler-icon"></span>
+            </button>
+            <div class="collapse navbar-collapse" id="navbarNav">
+                <ul class="navbar-nav ms-auto">
+                    <li class="nav-item">
+                        <a class="nav-link" href="index.html">
+                            <i class="bi bi-grid-fill me-1"></i> Dashboard
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a class="nav-link text-warning" href="#" onclick="resetDatabase()">
+                            <i class="bi bi-arrow-clockwise me-1"></i> Reset DB
+                        </a>
+                    </li>
+                </ul>
+            </div>
+        </div>
+    </nav>
+    
+    <!-- Alert Container -->
+    <div class="container mt-3">
+        <div id="alert-container"></div>
+    </div>
+    
+    <!-- Main Content -->
+    <main class="container py-4">
+        <div class="text-center mb-5">
+            <h1 class="display-4 fw-bold mb-3">
+                <span style="background: var(--primary-gradient); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text;">
+                    🔒 Security Vulnerability Demo Lab
+                </span>
+            </h1>
+            <p class="lead text-muted mb-4">
+                Learn about common web vulnerabilities by comparing <span class="text-danger fw-bold">Vulnerable</span> vs <span class="text-success fw-bold">Secure</span> implementations
+            </p>
+            <div class="alert alert-warning d-inline-flex align-items-center gap-2 px-4" role="alert">
+                <i class="bi bi-exclamation-triangle-fill"></i>
+                <span><strong>Educational Purpose Only</strong> - Never deploy vulnerable code in production!</span>
+            </div>
+        </div>
+
+        <div class="row g-4">
+            <!-- SQL Injection -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">💉</div>
+                        <h4 class="card-title fw-bold mb-3">SQL Injection</h4>
+                        <p class="card-text text-muted mb-4">User search feature vulnerable to database manipulation</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="sqli.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="sqli.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- XSS -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">📜</div>
+                        <h4 class="card-title fw-bold mb-3">Cross-Site Scripting (XSS)</h4>
+                        <p class="card-text text-muted mb-4">Guestbook that allows malicious script injection</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="xss.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="xss.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- CSRF -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">🎭</div>
+                        <h4 class="card-title fw-bold mb-3">CSRF Attack</h4>
+                        <p class="card-text text-muted mb-4">Email update form vulnerable to forged requests</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="csrf.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="csrf.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Brute Force -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">🔨</div>
+                        <h4 class="card-title fw-bold mb-3">Brute Force Attack</h4>
+                        <p class="card-text text-muted mb-4">Login page with no rate limiting protection</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="bruteforce.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="bruteforce.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- Path Traversal -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">📂</div>
+                        <h4 class="card-title fw-bold mb-3">Path Traversal</h4>
+                        <p class="card-text text-muted mb-4">File viewer allowing access to sensitive files</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="pathtraversal.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="pathtraversal.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+            
+            <!-- DoS -->
+            <div class="col-lg-4 col-md-6">
+                <div class="card demo-card h-100">
+                    <div class="card-body text-center p-4">
+                        <div class="demo-icon">💥</div>
+                        <h4 class="card-title fw-bold mb-3">Denial of Service (ReDoS)</h4>
+                        <p class="card-text text-muted mb-4">Text processor vulnerable to regex attacks</p>
+                        <div class="d-flex gap-2 justify-content-center">
+                            <a href="dos.html?mode=vulnerable" class="btn btn-danger">
+                                <i class="bi bi-bug-fill me-1"></i> Vulnerable
+                            </a>
+                            <a href="dos.html?mode=secure" class="btn btn-success">
+                                <i class="bi bi-shield-check me-1"></i> Secure
+                            </a>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Quick Start Guide -->
+        <div class="row mt-5">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <i class="bi bi-info-circle-fill text-info"></i>
+                        <span class="fw-bold">Quick Start Guide</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-4">
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-danger">
+                                    <i class="bi bi-1-circle-fill me-2"></i>Explore Vulnerable Code
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    Click on "Vulnerable" buttons to see how common attacks work. 
+                                    Use the provided attack strings to test the vulnerabilities.
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-success">
+                                    <i class="bi bi-2-circle-fill me-2"></i>Compare Secure Version
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    Switch to "Secure" versions to see the proper fix.
+                                    Notice how the same attacks now fail.
+                                </p>
+                            </div>
+                            <div class="col-md-4">
+                                <h6 class="fw-bold text-info">
+                                    <i class="bi bi-3-circle-fill me-2"></i>Review the Code
+                                </h6>
+                                <p class="text-muted small mb-0">
+                                    Each page includes code explanations showing exactly
+                                    what makes code vulnerable vs secure.
+                                </p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Demo Credentials -->
+        <div class="row mt-4">
+            <div class="col-12">
+                <div class="card">
+                    <div class="card-header d-flex align-items-center gap-2">
+                        <i class="bi bi-person-fill-lock text-primary"></i>
+                        <span class="fw-bold">Demo Credentials</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--darker-bg); border: 1px solid var(--border-color);">
+                                    <i class="bi bi-person-badge fs-3 text-danger"></i>
+                                    <div>
+                                        <div class="fw-bold">Admin User</div>
+                                        <code>admin</code> / <code>admin</code>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-md-6">
+                                <div class="d-flex align-items-center gap-3 p-3 rounded" style="background: var(--darker-bg); border: 1px solid var(--border-color);">
+                                    <i class="bi bi-person-fill fs-3 text-info"></i>
+                                    <div>
+                                        <div class="fw-bold">Regular User</div>
+                                        <code>john_doe</code> / <code>password123</code>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+    
+    <!-- Footer -->
+    <footer>
+        <div class="container text-center">
+            <p class="mb-1 text-muted">
+                <i class="bi bi-exclamation-triangle-fill text-warning me-2"></i>
+                <strong>Educational Use Only</strong> - This application contains intentionally vulnerable code
+            </p>
+            <p class="mb-0 text-muted small">
+                Secure Web Development | Security Demo Lab v1.0
+            </p>
+        </div>
+    </footer>
+    
+    <!-- Bootstrap 5 JS -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.2/dist/js/bootstrap.bundle.min.js"></script>
+    <!-- Axios -->
+    <script src="https://cdn.jsdelivr.net/npm/axios/dist/axios.min.js"></script>
+    <!-- App JS -->
+    <script src="js/app.js"></script>
+</body>
+</html>
+

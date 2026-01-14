@@ -1,0 +1,12 @@
+=================================
+!! SENSITIVE CONFIGURATION FILE !!
+=================================
+
+DATABASE_PASSWORD=super_secret_password_123
+API_KEY=sk-1234567890abcdef
+ADMIN_TOKEN=admin_bearer_token_xyz
+AWS_SECRET_KEY=AKIAIOSFODNN7EXAMPLE
+
+This file should NEVER be accessible to users!
+If you can see this, the path traversal attack worked!
+=================================
